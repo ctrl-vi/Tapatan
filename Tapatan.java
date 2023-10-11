@@ -11,25 +11,47 @@ import java.util.*;
 /**
  * Represents the board state of Tapatan, and checks for winners, ties, and validity of moves.
  */
-public class Tapatan 
+public class Tapatan implements AbstractStrategyGame 
 {
     /**
      * Represents whose turn it is, as well as the color of each square.
      */
-    public enum Color
+    private enum Color
     {
-        BLACK, WHITE; // Default will be null (empty)
+        BLACK(0), WHITE(1); // Default will be null (empty)
+        private final int index; // As specified inside of the Interface
+        
+        /**
+         * Creates the enumeration.
+         *
+         * @param index the number that will be outputed for the player
+         */
+        private Color(int index) 
+        {
+            this.index = index;
+        }
+  
+        /**
+         * Returns the index that represents the player to allow for working with the
+         * {@link AbstractStrategyGame} interface, as that uses player numbers rather than 
+         * colors.
+         *
+         * @return index associated with player's color
+         */
+        public int getIndex() 
+        {
+            return index;
+        }
     }
+    
 
-    public static final int SIZE = 3; // How wide and tall the grid should be
-    public static final int LINE_LENGTH = 37; // Includes the outsides of boxes
-    public static final int MARGIN = 2; // Minimum white space amount + side of box, per side
+    private static final int SIZE = 3; // How wide and tall the grid should be
         
     /** 
      * The current board state will be stored as an enum array, standard x, y for 2d array. "No
      * counter" is represented as a null value. For previous board state checking, it's stored as
      * a 9-character long String, with "W" as white, "B" as black, and "E" as empty, left to right,
-     * top to bottom. These act as the keys inside of the 
+     * top to bottom. These act as the keys inside of the map to check for ties
      * Example:
      * [BLACK], [WHITE], [ NULL]
      * [ NULL], [BLACK], [BLACK] -----> "BWEEBBWWE"
@@ -55,6 +77,97 @@ public class Tapatan
         currentPlayer = Color.WHITE;
     }
 
+    /** 
+     * Provides the reader a good overview of how this game works, and allows the user to jump
+     * right into playing the game. 
+     * 
+     */
+    public String instructions()
+    {
+        String instructions = "Welcome to Tapatan. Here are the rules: A game starts with a 3 x 3"; 
+        instructions += " Grid, with lines going from the center to all of the exterior points, "; 
+        instructions += "and lines forming a border around the exterior. Each player starts with "; 
+        instructions += "3 counters. Players take turns placing pieces anywhere on the board ";
+        instructions += "(basically traditional Tic-Tac-Toe for the first 3 rounds). Once all ";
+        instructions += "tiles have been placed, on each players turn, they move any one piece ";
+        instructions += " one space along any line, as long as the resulting space is empty. The";
+        instructions += " end condition is when there is a 3 counters of the same type in a row"; 
+        instructions += " (horizontal, vertical, OR diagonal), and the winner is the owner of ";
+        instructions += "those 3 counters. A tie is declared when 3 moves are repeated at least"; 
+        instructions += " twice (similar to 3 move repetition in chess)";
+
+        return instructions;
+    }
+
+    /**
+     * Returns the index of the player who will take the upcoming turn, but if there is game over
+     * (such as if there is a tie or winner), this will return -1.
+     *
+     * @return int that presents the next player
+     */
+    public int getNextPlayer()
+    {
+        return isGameOver() ? -1 : currentPlayer.getIndex();
+    }
+
+    /**
+     * If it's the first 3 rounds will add a new counter at the given x and y coordinate, otherwise
+     * it will ask the user for a piece to move and where to move it to. Any given coordinate must 
+     * be within the grid (0 <= x <= 2 and 0 <= y <= 2), destination for any counter must be empty,
+     * the piece at the origin must be the same color as the user, and the distance the piece moves
+     * must be at most 1 square laterally, 1 square horizontally (max distance of sqrt(2)). 
+     * 
+     * <p>Inadherance to any of these parameters will lead to a couple exceptions being thrown.
+     *
+     * @param scanner the scanner used to get inputs from the terminal
+     * @throws IndexOutOfBoundsException coordinate is not within our gird
+     * @throws IllegalStateException we are trying to add too many counters, that's not a legal
+     *          state
+     * @throws IllegalArgumentException the chosen space is already filled with another piece
+     */
+    public void makeMove(Scanner scanner)
+    {
+        if (numberOfRounds < 3) // Prevents too many counters on the board
+        {
+            System.out.print("Input the x coordinate: ");
+            int x = scanner.nextInt();
+            System.out.print("Input the y coordinate: ");
+            int y = scanner.nextInt();
+
+            addCounter(new Coordinate(x, y));
+        }
+        else
+        {
+            System.out.print("Input the origin x coordinate: ");
+            int x1 = scanner.nextInt();
+            System.out.print("Input the origin y coordinate: ");
+            int y1 = scanner.nextInt();
+            Coordinate origin = new Coordinate(x1, y1);
+
+            System.out.print("Input the destination x coordinate: ");
+            int x2 = scanner.nextInt();
+            System.out.print("Input the destination y coordinate: ");
+            int y2 = scanner.nextInt();
+            Coordinate destination = new Coordinate(x2, y2);
+
+            movePiece(origin, destination);
+        }
+        switchPlayer();
+    }
+
+    /**
+     * Returns the index of the winning player (black as 0, white as 1), or if the game is not over
+     * or there is no winner (tie), a -1. 
+     *
+     * @return int that represents the winner
+     */
+    public int getWinner()
+    {
+        // Have to convert from color to index  as outlined in spec
+        Color winnerColor = getWinnerColor(); 
+        return winnerColor == null ? -1 : winnerColor.getIndex(); 
+    }
+
     /**
      * Will add a counter to the board, as long as we are allowed to do so (Must not have >3 tokens
      * of your color on the board already, square must be empty). Changes board state to reflect
@@ -68,7 +181,7 @@ public class Tapatan
      *          state
      * @throws IllegalArgumentException the chosen space is already filled with another piece
      */
-    public void addCounter(Coordinate destination)
+    private void addCounter(Coordinate destination)
     {
         if (!destination.isValid(SIZE))
         {
@@ -87,9 +200,26 @@ public class Tapatan
         }
         setPoint(currentPlayer, destination);
         archiveCurrentBoardState();
-        switchPlayer();
     }
 
+    /**
+     * Checks the current board state and sees if we have a clear winner.
+     *
+     * @return true if we have a winner, false if we do not
+     */
+    public boolean isGameOver()
+    {
+        return getWinnerColor() != null || isTie();
+    }
+
+
+    /**
+     * Returns a new string which contains all of the instructions for the game. Has all relevent
+     * information that allows any player to jump right into the action.
+     *
+     * @return the string containing all instructions.
+     */
+    
     /**
      * Moves a given counter at an origin to a desired destination. Alters both origin and 
      * destination points inside of 2d array to reflect the current board state. Also will 
@@ -104,7 +234,7 @@ public class Tapatan
      * @throws IllegalArgumentException chosen space is filled, you're moving another player's
      *      piece, or you're trying to move the piece too far
      */
-    public void move(Coordinate origin, Coordinate destination)
+    private void movePiece(Coordinate origin, Coordinate destination)
     {
         if (!origin.isValid(SIZE) || !destination.isValid(SIZE))
         {
@@ -134,7 +264,6 @@ public class Tapatan
         setPoint(null, origin);
         setPoint(currentPlayer, destination);
         archiveCurrentBoardState();
-        switchPlayer();
     }
 
     /**
@@ -143,7 +272,7 @@ public class Tapatan
      * @return color of winner, null if undecided OR tie
      * @throws invalidArguementException if the square is invalid or already occupied
      */
-    public Color winnerColor()
+    private Color getWinnerColor()
     {
         if (
                 (
@@ -186,22 +315,12 @@ public class Tapatan
     }
 
     /**
-     * Checks the current board state and sees if we have a clear winner.
-     *
-     * @return true if we have a winner, false if we do not
-     */
-    public boolean hasWinner()
-    {
-        return winnerColor() != null;
-    }
-
-    /**
-     * Checks if a board state appears in the arraylist more than 2 times, which should yield a 
+     * Checks if a board state appears in the map more than 2 times, which should yield a 
      * tie according to the rules of Tapatan.
      *
      * @return true if we have a winner, false if we do not
      */
-    public boolean hasTie()
+    private boolean isTie()
     {
         boolean result = false;
         for (int count : previousBoardStates.values())
@@ -220,7 +339,7 @@ public class Tapatan
      * @return whether the square is open or not as a true/false
      * @throws IndexOutOfBoundsException coordinate is not within our grid
      */
-    public boolean isSquareOpen(Coordinate coordinate)
+    private boolean isSquareOpen(Coordinate coordinate)
     {
         if (!coordinate.isValid(SIZE))
         {
@@ -239,7 +358,7 @@ public class Tapatan
      * 
      * @throws IndexOutOfBoundsException the square does not exist on the grid
      */
-    public Color colorAt(int x, int y)
+    private Color colorAt(int x, int y)
     {
         return colorAt(new Coordinate(x, y));
     }
@@ -253,7 +372,7 @@ public class Tapatan
      * 
      * @throws IndexOutOfBoundsException the square does not exist on the grid
      */
-    public Color colorAt(Coordinate coordinate)
+    private Color colorAt(Coordinate coordinate)
     {
         if (!coordinate.isValid(SIZE))
         {
@@ -264,12 +383,12 @@ public class Tapatan
     }
 
     /**
-     * Inverts the given color, useful for finding opponent color.
+     * Inverts the given color, useful for finding opponent {@link Color}.
      *
-     * @param color given color of type "Color"
-     * @return the opposite color (eg. BLACK -> WHITE)
+     * @param color given Color
+     * @return the opposite Color (eg. BLACK -> WHITE)
      */
-    public Color oppositeColor(Color color)
+    private Color oppositeColor(Color color)
     {
         return color == Color.WHITE ? Color.BLACK : Color.WHITE;
     }
@@ -352,7 +471,7 @@ public class Tapatan
      * 
      * @throws IndexOutOfBoundsException at least 1 part of the coordinate is Out Of Bounds
      */
-    public void setPoint(Color color, Coordinate coordinate)
+    private void setPoint(Color color, Coordinate coordinate)
     {
         if (!coordinate.isValid(SIZE))
         {
@@ -367,7 +486,7 @@ public class Tapatan
      *
      * @return whose turn it is, as a {@link Color} 
      */
-    public Color getCurrentPlayer() 
+    private Color getCurrentPlayer() 
     {
         return currentPlayer;
     }
@@ -394,7 +513,7 @@ public class Tapatan
      * └─────┘   └─────┘   └─────┘
 
      */
-    public void printCurrentBoardState()
+    public String toString()
     {
         String[] values = new String[9]; // Stores all text values, left to right, top to bottom
         for (int i = 0; i < SIZE; i++)
@@ -411,82 +530,37 @@ public class Tapatan
                 }
             }
         }   
-        System.out.println("       ┌─┐       ┌─┐       ┌─┐       ");
-        System.out.println("       │0│       │1│       │2│       ");
-        System.out.println("       └─┘       └─┘       └─┘       ");
-        System.out.println(" ┌─┐ ┌─────┐   ┌─────┐   ┌─────┐     ");
-        System.out.println(String.format(" │0│ │%1$s│───│%2$s│───│%3$s│     ", 
+        String output = "";
+        output += ("       ┌─┐       ┌─┐       ┌─┐       \n");
+        output += ("       │0│       │1│       │2│       \n");
+        output += ("       └─┘       └─┘       └─┘       \n");
+        output += (" ┌─┐ ┌─────┐   ┌─────┐   ┌─────┐     \n");
+        output += (String.format(" │0│ │%1$s│───│%2$s│───│%3$s│     \n", 
                             values[0], 
                             values[1], 
                             values[2]));
-        System.out.println(" └─┘ └─────┘   └─────┘   └─────┘     ");
-        System.out.println("        │  ╲      │      ╱  │        ");
-        System.out.println("        │   ╲     │     ╱   │        ");
-        System.out.println("        │    ╲    │    ╱    │        ");
-        System.out.println(" ┌─┐ ┌─────┐  ╲┌─────┐╱  ┌─────┐     ");
-        System.out.println(String.format(" │1│ │%1$s│───│%2$s│───│%3$s│     ", 
+        output += (" └─┘ └─────┘   └─────┘   └─────┘     \n");
+        output += ("        │  ╲      │      ╱  │        \n");
+        output += ("        │   ╲     │     ╱   │        \n");
+        output += ("        │    ╲    │    ╱    │        \n");
+        output += (" ┌─┐ ┌─────┐  ╲┌─────┐╱  ┌─────┐     \n");
+        output += (String.format(" │1│ │%1$s│───│%2$s│───│%3$s│     \n", 
                             values[3], 
                             values[4], 
                             values[5]));
-        System.out.println(" └─┘ └─────┘  ╱└─────┘╲  └─────┘     ");
-        System.out.println("        │    ╱    │    ╲    │        ");
-        System.out.println("        │   ╱     │     ╲   │        ");
-        System.out.println("        │  ╱      │      ╲  │        ");
-        System.out.println(" ┌─┐ ┌─────┐   ┌─────┐   ┌─────┐     ");
-        System.out.println(String.format(" │2│ │%1$s│───│%2$s│───│%3$s│     ", 
+        output += (" └─┘ └─────┘  ╱└─────┘╲  └─────┘     \n");
+        output += ("        │    ╱    │    ╲    │        \n");
+        output += ("        │   ╱     │     ╲   │        \n");
+        output += ("        │  ╱      │      ╲  │        \n");
+        output += (" ┌─┐ ┌─────┐   ┌─────┐   ┌─────┐     \n");
+        output += (String.format(" │2│ │%1$s│───│%2$s│───│%3$s│     \n", 
                             values[6], 
                             values[7], 
                             values[8]));
-        System.out.println(" └─┘ └─────┘   └─────┘   └─────┘     ");
+        output += (" └─┘ └─────┘   └─────┘   └─────┘     \n");
+        return output;
     }
 
-    /**
-     * Prints out the message in a fancy border, with wraparound if neccessary.
-     *
-     * @param message the message of any length that we want to print to terminal.
-     */
-    public void printMessage(String message)
-    {
-        System.out.println("┌───────────────────────────────────┐");
-        
-        List<String> lines = new ArrayList<>();
-        String[] words = message.split(" ");
-        String currentLine = "";
-        for (String word : words) 
-        {
-            String sectionOfLine = word + " ";
-            if (currentLine.length() + sectionOfLine.length() <= LINE_LENGTH - (2 * MARGIN))
-            {
-                currentLine += sectionOfLine;
-            }
-            else
-            {
-                lines.add(currentLine.substring(0, currentLine.length() - 1)); // Removes end space
-                currentLine = sectionOfLine;
-            }
-        }
-        if (currentLine != "")
-        {
-            lines.add(currentLine);
-        }
-        for (String line : lines) 
-        {    
-            String entireLine = "│";
-            int leftWhitespace = (LINE_LENGTH - line.length()) / 2;
 
-            for (int i = 1; i < leftWhitespace; i++)
-            {
-                entireLine += " ";
-            }
-            entireLine += line;
-            int rightWhitespace = LINE_LENGTH - leftWhitespace - line.length();
-            for (int i = 1; i < rightWhitespace; i++)
-            {
-                entireLine += " ";
-            }
-            entireLine += "│";
-            System.out.println(entireLine);
-        }
-        System.out.println("└───────────────────────────────────┘");
-    }
+
 }
