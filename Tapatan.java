@@ -48,18 +48,18 @@ public class Tapatan implements AbstractStrategyGame
     private static final int SIZE = 3; // How wide and tall the grid should be
         
     /** 
-     * The current board state will be stored as an enum array, standard x, y for 2d array. "No
+     * The current board state will be stored as an enum array, standard x and y for 2d array. "No
      * counter" is represented as a null value. For previous board state checking, it's stored as
      * a 9-character long String, with "W" as white, "B" as black, and "E" as empty, left to right,
-     * top to bottom. These act as the keys inside of the map to check for ties
+     * top to bottom. These act as the keys inside of the map to check for ties.
      * Example:
      * [BLACK], [WHITE], [ NULL]
      * [ NULL], [BLACK], [BLACK] -----> "BWEEBBWWE"
      * [WHITE], [WHITE], [ NULL]        
      */ 
     private Color[][] currentBoardState;
-
-    private Map<String, Integer> previousBoardStates;
+    // the integer is the number of time the specific boardstate has been encountered
+    private Map<String, Integer> previousBoardStates; 
 
     // Should increment at start of white turn, also count how many counters each player put down
     private int numberOfRounds; 
@@ -80,6 +80,9 @@ public class Tapatan implements AbstractStrategyGame
     /** 
      * Provides the reader a good overview of how this game works, and allows the user to jump
      * right into playing the game. 
+     *
+     * @returns a string explaining everything, including how to use our implementation of the
+     *          game.
      * 
      */
     public String instructions()
@@ -94,7 +97,10 @@ public class Tapatan implements AbstractStrategyGame
         instructions += " end condition is when there is a 3 counters of the same type in a row"; 
         instructions += " (horizontal, vertical, OR diagonal), and the winner is the owner of ";
         instructions += "those 3 counters. A tie is declared when 3 moves are repeated at least"; 
-        instructions += " twice (similar to 3 move repetition in chess)";
+        instructions += " twice (similar to 3 move repetition in chess). To add a counter, type ";
+        instructions += "x and y coordinates on your turn (as directed). To move a piece, enter ";
+        instructions += "the x and y coordinates of the counter you want to move, and then the ";
+        instructions += "x and y coordinates of the destination of the counter.";
 
         return instructions;
     }
@@ -112,22 +118,25 @@ public class Tapatan implements AbstractStrategyGame
 
     /**
      * If it's the first 3 rounds will add a new counter at the given x and y coordinate, otherwise
-     * it will ask the user for a piece to move and where to move it to. Any given coordinate must 
-     * be within the grid (0 <= x <= 2 and 0 <= y <= 2), destination for any counter must be empty,
-     * the piece at the origin must be the same color as the user, and the distance the piece moves
-     * must be at most 1 square laterally, 1 square horizontally (max distance of sqrt(2)). 
+     * it will ask the user for a coordinate to move from and a coordinate to move to. Any given 
+     * coordinate must be within the grid (as shown by coordinate markers), destination for any
+     * counter must be empty, the piece at the origin must be the same color as the user, and the 
+     * piece moves must be along the lines inside of the Tapatan board. At the end, the board state
+     * will reflect the changes made by the current player's move, and will move on to the next 
+     * player's turn!
      * 
-     * <p>Inadherance to any of these parameters will lead to a couple exceptions being thrown.
+     * <p>Inadherence to any of these parameters will lead to a couple exceptions being thrown.
      *
-     * @param scanner the scanner used to get inputs from the terminal
+     * @param scanner the scanner used to get inputs, and thus coordinates, from the terminal
      * @throws IndexOutOfBoundsException coordinate is not within our gird
      * @throws IllegalStateException we are trying to add too many counters, that's not a legal
      *          state
-     * @throws IllegalArgumentException the chosen space is already filled with another piece
+     * @throws IllegalArgumentException chosen space is filled, you're moving another player's
+     *      piece, or you're trying to move the piece too far
      */
     public void makeMove(Scanner scanner)
     {
-        if (numberOfRounds < 3) // Prevents too many counters on the board
+        if (numberOfRounds < 3) 
         {
             System.out.print("Input the x coordinate: ");
             int x = scanner.nextInt();
@@ -156,16 +165,25 @@ public class Tapatan implements AbstractStrategyGame
     }
 
     /**
-     * Returns the index of the winning player (black as 0, white as 1), or if the game is not over
+     * Returns the index of the winning player (black as 0, white as 1). If the game is not over
      * or there is no winner (tie), a -1. 
      *
-     * @return int that represents the winner
+     * @return int that represents the winner/lack thereof
      */
     public int getWinner()
     {
-        // Have to convert from color to index  as outlined in spec
         Color winnerColor = getWinnerColor(); 
         return winnerColor == null ? -1 : winnerColor.getIndex(); 
+    }
+
+    /**
+     * Checks the current board state and sees if we have a clear winner or tie.
+     *
+     * @return true if we have a winner, false if we are still in play
+     */
+    public boolean isGameOver()
+    {
+        return getWinnerColor() != null || isTie();
     }
 
     /**
@@ -201,29 +219,11 @@ public class Tapatan implements AbstractStrategyGame
         setPoint(currentPlayer, destination);
         archiveCurrentBoardState();
     }
-
-    /**
-     * Checks the current board state and sees if we have a clear winner.
-     *
-     * @return true if we have a winner, false if we do not
-     */
-    public boolean isGameOver()
-    {
-        return getWinnerColor() != null || isTie();
-    }
-
-
-    /**
-     * Returns a new string which contains all of the instructions for the game. Has all relevent
-     * information that allows any player to jump right into the action.
-     *
-     * @return the string containing all instructions.
-     */
     
     /**
      * Moves a given counter at an origin to a desired destination. Alters both origin and 
      * destination points inside of 2d array to reflect the current board state. Also will 
-     * increment number of rounds if necessary, and switch players. Will also archive the new 
+     * switch players, and increment number of rounds if necessary. Will also archive the new 
      * board state for stalemate checking.
      *
      * @param origin The place where we are moving our point from, must be within grid and point
@@ -266,8 +266,18 @@ public class Tapatan implements AbstractStrategyGame
         archiveCurrentBoardState();
     }
 
+    /** 
+     * Extracts the more complicated part of moving a piece: whether it's going over a line...
+     *
+     * @returns boolean that tells us whether the move is valid or not 
+     */
+    private void isValidMove(Coordinate origin, Coordinate destination)
+    {
+        
+    }
+
     /**
-     * Checks to see if the current boardstate contains a winner.
+     * Checks to see if the current boardstate contains a winner, as outline in instructions
      *
      * @return color of winner, null if undecided OR tie
      * @throws invalidArguementException if the square is invalid or already occupied
@@ -333,7 +343,7 @@ public class Tapatan implements AbstractStrategyGame
 
     /**
      * Returns whether the square already contains a counter (if null, then it's open, otherwise
-     * it's taken up by a counter of some sort (use colorAt() method to find that color).
+     * it's taken up by a counter of some sort) (use colorAt() method to find that color).
      *
      * @param coordinate the square we want to check
      * @return whether the square is open or not as a true/false
@@ -383,7 +393,7 @@ public class Tapatan implements AbstractStrategyGame
     }
 
     /**
-     * Inverts the given color, useful for finding opponent {@link Color}.
+     * Inverts the given color, useful for finding opponent {@link Color}, or next player.
      *
      * @param color given Color
      * @return the opposite Color (eg. BLACK -> WHITE)
@@ -395,7 +405,8 @@ public class Tapatan implements AbstractStrategyGame
 
 
     /**
-     * Counts how many times the current board state has happened. otherwise will add
+     * Increments the times the current board state has happened. otherwise will add the new 
+     * Key and Value pair to the map
      */
     private int archiveCurrentBoardState()
     {
@@ -482,18 +493,8 @@ public class Tapatan implements AbstractStrategyGame
     }
 
     /**
-     * Getter that returns whose turn it is.
-     *
-     * @return whose turn it is, as a {@link Color} 
-     */
-    private Color getCurrentPlayer() 
-    {
-        return currentPlayer;
-    }
-
-    /**
-     * Prints out the current board state into the terminal that is visually appealing and 
-     * readable.
+     * returns a board state that is really awesome and cool looking and can simply be printed
+     * into the terminal.
      * I SPENT WAY TOO LONG ON THIS TEMPLATE but it looks very pretty!
      * Example:
      * ┌─────┐   ┌─────┐   ┌─────┐

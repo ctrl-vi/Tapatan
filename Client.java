@@ -50,7 +50,8 @@ public class Client
     }
 
     /**
-     * Prints out the message in a fancy border, with wraparound if neccessary.
+     * Prints out the message in a fancy border, with wraparound if neccessary. (I need it!
+     * The default just looks so bad on the screen with the board state printed out)
      *
      * @param message the message of any length that we want to print to terminal.
      */

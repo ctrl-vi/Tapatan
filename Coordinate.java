@@ -88,4 +88,15 @@ public class Coordinate
     {
         return xCoord >= 0 && xCoord < topBound && yCoord >= 0 && yCoord < topBound;
     }
+
+    /**
+     * Compares two coodinates and sees if they have the same x and y (same point on grid).
+     *
+     * @param otherPoint the other point we are checking against
+     * @return whether it is on top of the other point or not!
+     */
+    public boolean isEqualTo(Coordinate otherPoint)
+    {
+        return xCoord == otherPoint.getX() && yCoord == otherPoint.getY(); 
+    }
 }
