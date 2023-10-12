@@ -14,7 +14,7 @@ import java.util.*;
 public class Tapatan implements AbstractStrategyGame 
 {
     /**
-     * Represents whose turn it is, as well as the color of each square.
+     * Represents whose turn it is, as well as the color of each square. Makes my life easier :)
      */
     private enum Color
     {
@@ -58,10 +58,10 @@ public class Tapatan implements AbstractStrategyGame
      * [WHITE], [WHITE], [ NULL]        
      */ 
     private Color[][] currentBoardState;
-    // the integer is the number of time the specific boardstate has been encountered
+    // the integer value is the number of time the specific boardstate has been encountered.
     private Map<String, Integer> previousBoardStates; 
 
-    // Should increment at start of white turn, also count how many counters each player put down
+    // Should increment at start of white turn, also counts how many counters each player put down.
     private int numberOfRounds; 
     private Color currentPlayer;
 
@@ -107,7 +107,7 @@ public class Tapatan implements AbstractStrategyGame
 
     /**
      * Returns the index of the player who will take the upcoming turn, but if there is game over
-     * (such as if there is a tie or winner), this will return -1.
+     * (there is a tie or winner), this will return -1.
      *
      * @return int that presents the next player
      */
@@ -132,7 +132,8 @@ public class Tapatan implements AbstractStrategyGame
      * @throws IllegalStateException we are trying to add too many counters, that's not a legal
      *          state
      * @throws IllegalArgumentException chosen space is filled, you're moving another player's
-     *      piece, or you're trying to move the piece too far
+     *      piece, you're trying to move the piece too far, or you're moving a piece that doesn't
+     *      exist.
      */
     public void makeMove(Scanner scanner)
     {
@@ -191,6 +192,7 @@ public class Tapatan implements AbstractStrategyGame
      * of your color on the board already, square must be empty). Changes board state to reflect
      * this. Also will increment number of rounds if necessary, and switch players. Will also 
      * archive the new board state for stalemate checking.
+     * 
      *
      * @param destination where we want to put the piece
      * 
@@ -232,7 +234,8 @@ public class Tapatan implements AbstractStrategyGame
      *      point is empty.
      * @throws IndexOutOfBoundsException coordinate(s) is/are not within our grid
      * @throws IllegalArgumentException chosen space is filled, you're moving another player's
-     *      piece, or you're trying to move the piece too far
+     *      piece, you're not moving along the lines, or you're moving a piece that doesn't
+     *      exist.
      */
     private void movePiece(Coordinate origin, Coordinate destination)
     {
@@ -246,19 +249,19 @@ public class Tapatan implements AbstractStrategyGame
             String message = "The destination space is already filled";
             throw new IllegalArgumentException(message);
         }
+        if (colorAt(origin) == null)
+        {
+            String message = "You need to select a piece already on the board";
+            throw new IllegalArgumentException(message);
+        }
         if (colorAt(origin) == oppositeColor(currentPlayer))
         {
             String message = "You're moving someone else's piece! That's rude...";
             throw new IllegalArgumentException(message);
         }
-        double distance = Math.pow(
-                Math.pow(origin.getX() - destination.getX(), 2)
-                + Math.pow(origin.getY() - destination.getY(), 2), 
-                0.5
-        );
-        if (distance > 1.5) // Max distance is 1 left/right, 1 up/down, max distance equals sqrt(2)
+        if (!isValidMove(origin, destination))
         {
-            String message = "You're moving your piece too far";
+            String message = "Please move along the lines on the board!";
             throw new IllegalArgumentException(message);
         }
         setPoint(null, origin);
@@ -268,12 +271,42 @@ public class Tapatan implements AbstractStrategyGame
 
     /** 
      * Extracts the more complicated part of moving a piece: whether it's going over a line...
+     * Assumes that you'll be within the grid 
      *
      * @returns boolean that tells us whether the move is valid or not 
      */
-    private void isValidMove(Coordinate origin, Coordinate destination)
+    private boolean isValidMove(Coordinate origin, Coordinate destination)
     {
+        double distance = Math.pow(
+                Math.pow(origin.getX() - destination.getX(), 2)
+                + Math.pow(origin.getY() - destination.getY(), 2), 
+                0.5
+        );
+        boolean isMovingTooFar = distance > 1.5;
+        //centers and corners are able to move freely (within the 1 up/down, 1 left/right range)
+        boolean isCenterOrCorner = 
+                origin.isEqualTo(new Coordinate(1, 1)) 
+                || origin.isEqualTo(new Coordinate(0, 0))
+                || origin.isEqualTo(new Coordinate(2, 0))
+                || origin.isEqualTo(new Coordinate(0, 2))
+                || origin.isEqualTo(new Coordinate(2, 2));
         
+        boolean isMovingFromSideToAnotherSide = 
+                (
+                    origin.isEqualTo(new Coordinate(1, 0))
+                    || origin.isEqualTo(new Coordinate(0, 1))
+                    || origin.isEqualTo(new Coordinate(2, 1))
+                    || origin.isEqualTo(new Coordinate(1, 2))
+                )
+                &&
+                (
+                    destination.isEqualTo(new Coordinate(1, 0))
+                    || destination.isEqualTo(new Coordinate(0, 1))
+                    || destination.isEqualTo(new Coordinate(2, 1))
+                    || destination.isEqualTo(new Coordinate(1, 2))
+                );
+
+        return !isMovingTooFar && isCenterOrCorner && !isMovingFromSideToAnotherSide;
     }
 
     /**
@@ -493,26 +526,29 @@ public class Tapatan implements AbstractStrategyGame
     }
 
     /**
-     * returns a board state that is really awesome and cool looking and can simply be printed
-     * into the terminal.
-     * I SPENT WAY TOO LONG ON THIS TEMPLATE but it looks very pretty!
-     * Example:
-     * ┌─────┐   ┌─────┐   ┌─────┐
-     * │     │───│     │───│     │
-     * └─────┘   └─────┘   └─────┘
-     *    │  ╲      │      ╱  │
-     *    │   ╲     │     ╱   │
-     *    │    ╲    │    ╱    │
-     * ┌─────┐  ╲┌─────┐╱  ┌─────┐
-     * │BLACK│   │WHITE│   │     │
-     * └─────┘  ╱└─────┘╲  └─────┘
-     *    │    ╱    │    ╲    │
-     *    │   ╱     │     ╲   │
-     *    │  ╱      │      ╲  │
-     * ┌─────┐   ┌─────┐   ┌─────┐
-     * │     │───│     │───│WHITE│
-     * └─────┘   └─────┘   └─────┘
-
+     * returns the board state in a way that can simply be printed into the terminal, yet looks 
+     * awesome and cool. I SPENT WAY TOO LONG ON THIS TEMPLATE but it looks very pretty! 
+     *
+     * <p>Example:
+     * <pre>
+     *┌─────┐   ┌─────┐   ┌─────┐
+     *│     │───│     │───│     │
+     *└─────┘   └─────┘   └─────┘
+     *   │  ╲      │      ╱  │
+     *   │   ╲     │     ╱   │
+     *   │    ╲    │    ╱    │
+     *┌─────┐  ╲┌─────┐╱  ┌─────┐
+     *│BLACK│───│WHITE│───│     │
+     *└─────┘  ╱└─────┘╲  └─────┘
+     *   │    ╱    │    ╲    │
+     *   │   ╱     │     ╲   │
+     *   │  ╱      │      ╲  │
+     *┌─────┐   ┌─────┐   ┌─────┐
+     *│     │───│     │───│WHITE│
+     *└─────┘   └─────┘   └─────┘
+     * </pre>
+     *
+     * @returns a human readable (but not machine readable) String that can be rendered in terminal
      */
     public String toString()
     {

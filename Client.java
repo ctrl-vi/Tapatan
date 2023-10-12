@@ -19,7 +19,7 @@ public class Client
     /**
      * The main function that runs our game of Tapatan.
      *
-     * @param args arguements that are put in during runtime, not used
+     * @param args arguments that are put in during runtime, not used
      */
     public static void main(String... args)
     {
