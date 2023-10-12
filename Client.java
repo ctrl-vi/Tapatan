@@ -44,7 +44,7 @@ public class Client
         else
         {
             String color = tapatan.getWinner() == 0 ? "BLACK" : "WHITE";
-            printMessage(color + " has won the game! Congrats I guess :p");
+            printMessage(color + " has won... Congrats, I guess... fr tho, thanks for playing! <3");
         }
         scanner.close();
     }
@@ -57,8 +57,8 @@ public class Client
      */
     public static void printMessage(String message)
     {
-        int lineLength = 37; // Includes the outsides of boxes
-        final int margin = 2; // Minimum white space amount + side of box, per side
+        int lineLength = 37; // Includes the box lines
+        int margin = 2; // Minimum white space amount + side of box, per side
         System.out.println("┌───────────────────────────────────┐");
         
         List<String> lines = new ArrayList<>();

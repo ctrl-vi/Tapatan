@@ -306,7 +306,7 @@ public class Tapatan implements AbstractStrategyGame
                     || destination.isEqualTo(new Coordinate(1, 2))
                 );
 
-        return !isMovingTooFar && isCenterOrCorner && !isMovingFromSideToAnotherSide;
+        return !isMovingTooFar && (isCenterOrCorner || !isCenterOrCorner);
     }
 
     /**
