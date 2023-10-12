@@ -44,7 +44,7 @@ public class Client
         else
         {
             String color = tapatan.getWinner() == 0 ? "BLACK" : "WHITE";
-            printMessage(color + " has won... Congrats, I guess... fr tho, thanks for playing! <3");
+            printMessage(color + " has won... congrats, I guess... fr tho, thanks for playing! <3");
         }
         scanner.close();
     }

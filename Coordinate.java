@@ -59,7 +59,7 @@ public class Coordinate
     }
 
     /**
-     * Gets the x coordinate.
+     * Gets the x coordinate (integer).
      *
      * @return the current x coordinate value
      */
@@ -69,7 +69,8 @@ public class Coordinate
     }
 
     /**
-     * Gets the y coordinate.
+     * Gets the y coordinate (integer).
+
      *
      * @return the current y coordinate value
      */
@@ -79,7 +80,7 @@ public class Coordinate
     }
 
     /**
-     * Checks whether this coordinate is contained within a grid with a top bound.
+     * Checks whether this coordinate is contained within the 1st quadrant, with a top bound.
      *
      * @param topBound The largest number we can use, EXCLUSIVE
      * @return whether the number is within the grid or not

@@ -92,15 +92,15 @@ public class Tapatan implements AbstractStrategyGame
         instructions += "and lines forming a border around the exterior. Each player starts with "; 
         instructions += "3 counters. Players take turns placing pieces anywhere on the board ";
         instructions += "(basically traditional Tic-Tac-Toe for the first 3 rounds). Once all ";
-        instructions += "tiles have been placed, on each players turn, they move any one piece ";
-        instructions += " one space along any line, as long as the resulting space is empty. The";
-        instructions += " end condition is when there is a 3 counters of the same type in a row"; 
-        instructions += " (horizontal, vertical, OR diagonal), and the winner is the owner of ";
-        instructions += "those 3 counters. A tie is declared when 3 moves are repeated at least"; 
-        instructions += " twice (similar to 3 move repetition in chess). To add a counter, type ";
-        instructions += "x and y coordinates on your turn (as directed). To move a piece, enter ";
-        instructions += "the x and y coordinates of the counter you want to move, and then the ";
-        instructions += "x and y coordinates of the destination of the counter.";
+        instructions += "counters have been placed, on each player's turn, they must move any ";
+        instructions += "one piece one space along any line, as long as the resulting space is ";
+        instructions += "empty. The end condition is when there is a 3 counters of the same type "; 
+        instructions += "in a row (horizontal, vertical, OR diagonal), and the winner is the ";
+        instructions += "owner of those 3 counters. A tie is declared when 3 moves are repeated "; 
+        instructions += "at least twice (similar to 3 move repetition in chess). To add a counter";
+        instructions += ", type x and y coordinates on your turn (as directed). To move a piece ";
+        instructions += ", enter the x and y coordinates of the counter you want to move, and ";
+        instructions += "then the x and y coordinates of the destination of the counter.";
 
         return instructions;
     }
@@ -438,7 +438,8 @@ public class Tapatan implements AbstractStrategyGame
 
 
     /**
-     * Increments the times the current board state has happened. otherwise will add the new 
+     * Increments the times the current board state has happened. if it doesn't already existk it 
+     * will add the new key and appropriately set its count. 
      * Key and Value pair to the map
      */
     private int archiveCurrentBoardState()
